@@ -1,6 +1,7 @@
 # https://cliutils.gitlab.io/modern-cmake/chapters/basics.html
 
 cmake_minimum_required(VERSION 3.14)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie")
 
 project(ldg_core VERSION 0.1
   DESCRIPTION "Level-of-Detail Grids"

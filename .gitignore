@@ -1,0 +1,6 @@
+data
+build
+tmp
+.vscode
+CImg.h
+res

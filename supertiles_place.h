@@ -5,6 +5,7 @@
 #define M_VEC
 #endif
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <cmath>
 #include "supertiles_QuadTree.h"
@@ -133,7 +134,11 @@ namespace supertiles
 
       ass_t qtLeafAssignment;
 
-      bool anyChange=false;      
+      bool anyChange=false;    
+
+	  // Jiashu: add cluster info
+	  std::vector<int> clusterInfo;  
+	  int labelnum = 0;
       
       if(loadAssignments != "" && !is_initAndExit(loadAssignments))
 	qtLeafAssignment=read_qtLeafAssignment(loadAssignments, gridDim);		      
@@ -167,6 +172,19 @@ namespace supertiles
 	  hassertm3(regularIdx==nTilesFull, regularIdx, nTilesFull, nTiles);
       }
       
+	  // Jiashu: get cluster info
+	  std::fstream f;
+	  f.open("/data/jiashu/ldg_core/data/celtech1k_cluster.txt",std::ios::in);
+	  clusterInfo.clear();
+	  for(const auto & idx : helper::range_n(nTiles)) {
+		int cluster_label;
+		f >> cluster_label;
+		clusterInfo.push_back(cluster_label);
+		if(cluster_label >= labelnum) labelnum = cluster_label + 1;
+	  }
+	  f.close();
+	  std::cout << "Get cluster info for celtech1k" << std::endl;
+	  
       
       std::vector<D> supertiles;
 #ifdef REVERT_ASSIGNMENT_COPY
@@ -214,6 +232,7 @@ namespace supertiles
 	//
 	const auto regularLeafIndices = std::get<0>(Plans::regularTileIndices<QT>(nTilesAssign));
 
+	// Jiashu: add new cost for compactness and convexity
 	auto supertilesCost_ = [&qt, /*&tiles,*/ &nElemsTile, &neighborFac, &nNeighbors, &qtNeighbors, &supertiles, &nodeLeafCounts, & regularLeafIndices, & maxNLevelsUp]
 	  (/*auto & supertiles, auto& nodeLeafCounts*//*, size_t leafLevel*/size_t level)
 	{
@@ -375,7 +394,7 @@ namespace supertiles
 		  if(post_cost >= prev_cost)
 		    {
 		      // set aggregate exchange mode to true here even for level 0 because qtLeafAssignment actually needs to be changed
-		      //std::cout << "revert assignment, prev_cost " << prev_cost << " vs post_cost " << post_cost << std::endl;
+		      std::cout << "revert assignment, prev_cost " << prev_cost << " vs post_cost " << post_cost << std::endl;
 		      //#ifdef REVERT_ASSIGNMENT_ADAPT
 		      adaptAssignment(plan_begin+b_from,
 				      plan_begin+b_to,
@@ -839,6 +858,34 @@ namespace supertiles
 		  // 	}
 
 		  std::cout << "rep_tile data elements: " << rep_tileData.size() << std::endl;
+		  
+		//  // Jiashu: save the first images
+		//   std::fstream f;
+		//   f.open("/data/jiashu/ldg_core/res/img/imgs.txt",std::ios::out);
+		//   auto img_number = rep_tileData.size() / (105 * 105);
+		//   size_t pos = 0;
+		//   for(auto i = 0; i < 1; i++) {
+		// 	for (auto j = 0; j < 105 * 105; j++) {
+		// 		f << rep_tileData[pos].x + 0 << " "<<rep_tileData[pos].y + 0<<" "<<rep_tileData[pos].z + 0<<std::endl;
+		// 		pos += 1;
+		// 	}
+		//   }
+		//   f.close();
+		//   std::cout << "Finding first images with 105 * 105" << std::endl;
+
+		// // save the first pixel of every image
+		//   std::fstream f;
+		//   f.open("/data/jiashu/ldg_core/res/first.txt",std::ios::out);
+		//   auto img_number = rep_tileData.size() / (105 * 105);
+		//   size_t pos = 0;
+		//   for(auto i = 0; i < img_number; i++) {
+		// 	for (auto j = 0; j < 105 * 105; j++) {
+		// 		if(j == 50) f << rep_tileData[pos].x + 0 << " "<<rep_tileData[pos].y + 0<<" "<<rep_tileData[pos].z + 0<<std::endl;
+		// 		pos += 1;
+		// 	}
+		//   }
+		//   f.close();
+		//   std::cout << "Finding first pixels with 1024" << std::endl;
 
 		  drawAdaptiveGrids<distFuncType>(po.outDir,
 						  gridDim,
