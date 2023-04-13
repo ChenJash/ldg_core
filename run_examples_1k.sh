@@ -3,7 +3,7 @@
 ldg_data=./data/ldg_data
 
 # just runs a specified number of iterations (default low number for testing, does not yield refined grid)
-niter=16
+niter=64
 
 #
 # STOCK1K

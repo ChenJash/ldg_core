@@ -50,6 +50,8 @@
 #include "helper_CairoDraw.h"
 #include <tuple>
 
+#include "supertiles_cluster_aware.h"
+
 #define CHECK_IMPROVEMENT 2
 #define REVERT_ASSIGNMENT_MODE 0
 
@@ -233,16 +235,20 @@ namespace supertiles
 	const auto regularLeafIndices = std::get<0>(Plans::regularTileIndices<QT>(nTilesAssign));
 
 	// Jiashu: add new cost for compactness and convexity
-	auto supertilesCost_ = [&qt, /*&tiles,*/ &nElemsTile, &neighborFac, &nNeighbors, &qtNeighbors, &supertiles, &nodeLeafCounts, & regularLeafIndices, & maxNLevelsUp]
+	auto supertilesCost_ = [&qt, /*&tiles,*/ &nElemsTile, &neighborFac, &nNeighbors, &qtNeighbors, &supertiles, &nodeLeafCounts, & regularLeafIndices, & maxNLevelsUp, &qtLeafAssignment, &clusterInfo]
 	  (/*auto & supertiles, auto& nodeLeafCounts*//*, size_t leafLevel*/size_t level)
 	{
 	  //const size_t leafLevel=0;
 	  std::vector<D> __ignore;
-	  return supertilesCost<DIST_FUNC>
-	    (__ignore, regularLeafIndices,
-	     supertiles.begin()/*+qt.getLevelOffset(leafLevel)*nElemsTile*/, nElemsTile, nodeLeafCounts/*.higherLevelCopy(leafLevel)*/,
-	     qt/*.higherLevelCopy(leafLevel)*/, qtNeighbors[/*leafLevel*/0], nNeighbors, neighborFac, level, maxNLevelsUp)
-	    ;
+	  auto proximity_cost = supertilesCost<DIST_FUNC> \
+	    (__ignore, regularLeafIndices, supertiles.begin()/*+qt.getLevelOffset(leafLevel)*nElemsTile*/, nElemsTile, nodeLeafCounts/*.higherLevelCopy(leafLevel)*/, \
+	     qt/*.higherLevelCopy(leafLevel)*/, qtNeighbors[/*leafLevel*/0], nNeighbors, neighborFac, level, maxNLevelsUp);
+
+	  ClusterAwareGridLayout ca_gl(supertiles, nElemsTile, qtLeafAssignment, clusterInfo, level);
+	  auto compactness_cost = ca_gl.compactnessCost(10);
+	  auto convexity_cost = ca_gl.convexityCost(5000);
+	  std::cout << "Cost:" << proximity_cost <<" "<< compactness_cost <<" "<< convexity_cost <<std::endl;
+	  return proximity_cost + compactness_cost + convexity_cost;
 	};
 
 #ifdef ASSIGN_GROUP_PERMUTATIONS
